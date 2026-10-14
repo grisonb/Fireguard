@@ -21,14 +21,47 @@
 <body>
 <iframe src="https://script.google.com/macros/s/AKfycby5GD1KNTm4kZhMWiwLMmkZ5C_2c7-JcY6GsugVKK48FuH9QjP-ZFcDClwKT1ncIyRe/exec" title="Planning 2026"></iframe>
 <script>
-  // Le code d'accès est gardé ici (page installée sur l'écran d'accueil) et transmis à l'appli
+  // La page installée sur l'écran d'accueil garde le code d'accès et la dernière copie du planning
+  // (l'iPad efface la mémoire de l'appli à chaque fermeture) et les transmet à l'appli.
+  var dbP = null;
+  function db() {
+    if (!dbP) dbP = new Promise(function (ok, ko) {
+      var r = indexedDB.open('planning', 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore('kv'); };
+      r.onsuccess = function () { ok(r.result); };
+      r.onerror = function () { ko(r.error); };
+    });
+    return dbP;
+  }
+  function lire(k) {
+    return db().then(function (d) {
+      return new Promise(function (ok) {
+        var q = d.transaction('kv').objectStore('kv').get(k);
+        q.onsuccess = function () { ok(q.result || null); };
+        q.onerror = function () { ok(null); };
+      });
+    }).catch(function () { return null; });
+  }
+  function ecrire(k, v) {
+    return db().then(function (d) {
+      var s = d.transaction('kv', 'readwrite').objectStore('kv');
+      if (v == null) s.delete(k); else s.put(v, k);
+    }).catch(function () { });
+  }
   window.addEventListener('message', function (e) {
     if (!/\.googleusercontent\.com$/.test(e.origin) || !e.data || !e.data.planning) return;
+    var src = e.source, org = e.origin, m = e.data;
     try {
-      if (e.data.planning === 'getCode') {
-        e.source.postMessage({ planning: 'code', code: localStorage.getItem('planning_code') || '' }, e.origin);
-      } else if (e.data.planning === 'setCode') {
-        if (e.data.code) localStorage.setItem('planning_code', e.data.code); else localStorage.removeItem('planning_code');
+      if (m.planning === 'getCode') {
+        lire('data').then(function (data) {
+          var code = ''; try { code = localStorage.getItem('planning_code') || ''; } catch (err) { }
+          src.postMessage({ planning: 'code', code: code, data: code ? data : null }, org);
+        });
+      } else if (m.planning === 'setCode') {
+        if (m.code) localStorage.setItem('planning_code', m.code);
+        else { localStorage.removeItem('planning_code'); ecrire('data', null); }
+      } else if (m.planning === 'setData') {
+        ecrire('data', m.data);
       }
     } catch (err) { }
   });
