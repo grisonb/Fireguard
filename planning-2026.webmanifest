@@ -1,0 +1,12 @@
+{
+  "name": "Planning 2026",
+  "short_name": "Planning 2026",
+  "start_url": "./planning-2026.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1f4e79",
+  "theme_color": "#1f4e79",
+  "icons": [
+    { "src": "planning-2026.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
