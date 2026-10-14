@@ -20,5 +20,18 @@
 </head>
 <body>
 <iframe src="https://script.google.com/macros/s/AKfycby5GD1KNTm4kZhMWiwLMmkZ5C_2c7-JcY6GsugVKK48FuH9QjP-ZFcDClwKT1ncIyRe/exec" title="Planning 2026"></iframe>
+<script>
+  // Le code d'accès est gardé ici (page installée sur l'écran d'accueil) et transmis à l'appli
+  window.addEventListener('message', function (e) {
+    if (!/\.googleusercontent\.com$/.test(e.origin) || !e.data || !e.data.planning) return;
+    try {
+      if (e.data.planning === 'getCode') {
+        e.source.postMessage({ planning: 'code', code: localStorage.getItem('planning_code') || '' }, e.origin);
+      } else if (e.data.planning === 'setCode') {
+        if (e.data.code) localStorage.setItem('planning_code', e.data.code); else localStorage.removeItem('planning_code');
+      }
+    } catch (err) { }
+  });
+</script>
 </body>
 </html>
