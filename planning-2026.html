@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Planning 2026</title>
+<title>Planning</title>
 <link rel="manifest" href="planning-2026.webmanifest">
 <link rel="icon" type="image/png" href="planning-2026.png">
 <link rel="apple-touch-icon" href="planning-2026.png">
@@ -19,9 +19,26 @@
 </style>
 </head>
 <body>
-<iframe src="https://script.google.com/macros/s/AKfycby5GD1KNTm4kZhMWiwLMmkZ5C_2c7-JcY6GsugVKK48FuH9QjP-ZFcDClwKT1ncIyRe/exec" title="Planning 2026"></iframe>
+<iframe id="appli" title="Planning"></iframe>
 <script>
-  // La page installée sur l'écran d'accueil garde le code d'accès et la dernière copie du planning
+  // Une appli Apps Script par année ; à partir du 1er janvier d'une année, les années passées ne sont plus proposées.
+  var APPLIS = {
+    '2026': 'https://script.google.com/macros/s/AKfycby5GD1KNTm4kZhMWiwLMmkZ5C_2c7-JcY6GsugVKK48FuH9QjP-ZFcDClwKT1ncIyRe/exec',
+    '2027': 'https://script.google.com/macros/s/AKfycbzMgLmT1KaF83uUOG2JIzIPB8EiJts4k0KdwmwjBfsx7ri2dp3H3D_4f_wq4UjXwXil/exec'
+  };
+  function annees() {
+    var an = new Date().getFullYear(), l = Object.keys(APPLIS).sort().filter(function (a) { return +a >= an; });
+    return l.length ? l : [Object.keys(APPLIS).sort().pop()];
+  }
+  function lireLS(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function ecrireLS(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { } }
+  var ANNEE = (function () {
+    var l = annees(), m = lireLS('planning_annee'), an = String(new Date().getFullYear());
+    return l.indexOf(m) >= 0 ? m : (l.indexOf(an) >= 0 ? an : l[0]);
+  })();
+  document.getElementById('appli').src = APPLIS[ANNEE];
+
+  // La page installée sur l'écran d'accueil garde le code d'accès et la dernière copie du planning de chaque année
   // (l'iPad efface la mémoire de l'appli à chaque fermeture) et les transmet à l'appli.
   var dbP = null;
   function db() {
@@ -53,15 +70,18 @@
     var src = e.source, org = e.origin, m = e.data;
     try {
       if (m.planning === 'getCode') {
-        lire('data').then(function (data) {
-          var code = ''; try { code = localStorage.getItem('planning_code') || ''; } catch (err) { }
-          src.postMessage({ planning: 'code', code: code, data: code ? data : null }, org);
+        lire('data_' + ANNEE).then(function (data) {
+          var code = lireLS('planning_code') || '';
+          src.postMessage({ planning: 'code', code: code, data: code ? data : null, annees: annees(), annee: ANNEE }, org);
         });
       } else if (m.planning === 'setCode') {
-        if (m.code) localStorage.setItem('planning_code', m.code);
-        else { localStorage.removeItem('planning_code'); ecrire('data', null); }
+        if (m.code) ecrireLS('planning_code', m.code);
+        else { ecrireLS('planning_code', null); Object.keys(APPLIS).forEach(function (a) { ecrire('data_' + a, null); }); }
       } else if (m.planning === 'setData') {
-        ecrire('data', m.data);
+        ecrire('data_' + ANNEE, m.data);
+      } else if (m.planning === 'annee' && annees().indexOf(String(m.annee)) >= 0) {
+        ANNEE = String(m.annee); ecrireLS('planning_annee', ANNEE);
+        document.getElementById('appli').src = APPLIS[ANNEE];
       }
     } catch (err) { }
   });
