@@ -1,0 +1,18 @@
+{
+  "id": "./planning-app",
+  "name": "Planning",
+  "short_name": "Planning",
+  "start_url": "./planning.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1f4e79",
+  "theme_color": "#1f4e79",
+  "icons": [
+    {
+      "src": "planning.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
